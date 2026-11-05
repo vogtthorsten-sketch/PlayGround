@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0414" />
+  <meta name="description" content="Neon Hollow — a cel-shaded Halloween endless runner through a neon graveyard. Dodge monsters, snag candy, survive the witching hour." />
+  <title>Neon Hollow — Halloween Endless Runner</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0414'/%3E%3Cpath d='M17 20c0-6 6-9 15-9s15 3 15 9c3 3 4 8 2 12-3 8-10 14-17 14S18 40 15 32c-2-4-1-9 2-12z' fill='%23ff8a1e'/%3E%3Cpath d='M22 25l6 4-6 4zM36 25l6 4-6 4z' fill='%23ffe34d'/%3E%3Cpath d='M24 41l5-3 4 3 4-3 4 3-4 5H28z' fill='%23200a12'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.js" } }
+  </script>
+</head>
+<body>
+  <main id="app">
+    <div id="stage" aria-hidden="true"></div>
+    <div class="screen-fx vignette"></div>
+    <div class="screen-fx grain"></div>
+    <div class="screen-fx scanlines"></div>
+
+    <header id="hud" class="hidden" aria-label="Game status">
+      <div class="hud-top">
+        <div class="hud-left">
+          <div class="score-wrap">
+            <span class="hud-label">SCORE</span>
+            <span id="score" class="score-value">0</span>
+            <span id="distance" class="distance-value">0 m</span>
+          </div>
+        </div>
+
+        <div class="hud-center">
+          <div class="candy-pill" title="Candy collected">
+            <svg viewBox="0 0 24 32" aria-hidden="true" class="candy-icon">
+              <path d="M12 1 21 23 3 23Z" fill="#ffd23f"/>
+              <path d="M6.2 15.5 12 1l5.8 14.5Z" fill="#ff9d1c"/>
+              <path d="M3 23h18l-1.4 4.5H4.4Z" fill="#fff3d1"/>
+            </svg>
+            <span id="candy-count">0</span>
+          </div>
+          <div id="combo" class="combo hidden"><span id="combo-x">x2</span><small>COMBO</small></div>
+        </div>
+
+        <div class="hud-right">
+          <button id="btn-mute" class="icon-btn" aria-label="Toggle sound" title="Sound">
+            <svg class="ico-sound" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5-1.8a6 6 0 0 1 0 9.6M19 4.5a10 10 0 0 1 0 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <svg class="ico-muted" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12 1 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <button id="btn-pause" class="icon-btn" aria-label="Pause game" title="Pause">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="powerups" class="powerups" aria-label="Active power-ups"></div>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      <div id="tutorial" class="tutorial">
+        <span class="tutorial-key">SWIPE</span> to dodge <i></i>
+        <span class="tutorial-key">UP</span> jump <i></i>
+        <span class="tutorial-key">DOWN</span> slide
+      </div>
+    </header>
+
+    <div id="flash" class="flash"></div>
+
+    <section id="menu" class="screen menu-screen">
+      <div class="menu-content">
+        <div class="eyebrow"><span class="pulse-dot"></span> MIDNIGHT CARNIVAL PRESENTS</div>
+        <h1 class="game-title">
+          <span class="title-neon">NEON</span>
+          <span class="title-hollow">HOLLOW</span>
+        </h1>
+        <p class="tagline">Run the neon graveyard. Dodge the dead.<br class="desktop-br" /> Snag candy before the witching hour ends.</p>
+
+        <div class="menu-actions">
+          <button id="btn-start" class="primary-btn">
+            <span class="btn-shine"></span>
+            <span class="btn-label">START RUNNING</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="best-badge">
+            <span class="best-label">BEST</span>
+            <span id="best-menu">0</span>
+          </div>
+        </div>
+
+        <div class="how-to">
+          <div class="how-item">
+            <span class="how-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14m-4-4 4 4-4 4M20 5v14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </span>
+            <span><b>DODGE</b><small>Swipe left / right</small></span>
+          </div>
+          <div class="how-item">
+            <span class="how-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-5 5 5-5 5 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </span>
+            <span><b>JUMP</b><small>Swipe up / tap</small></span>
+          </div>
+          <div class="how-item">
+            <span class="how-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m5-5-5 5-5-5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </span>
+            <span><b>SLIDE</b><small>Swipe down</small></span>
+          </div>
+        </div>
+
+        <div class="menu-footer">
+          <span class="live-tag"><span class="live-dot"></span> ENDLESS NIGHT</span>
+          <span class="sep">/</span>
+          <span>TOUCH &amp; KEYBOARD</span>
+          <span class="sep">/</span>
+          <span>HEADPHONES ON</span>
+        </div>
+      </div>
+
+      <aside class="menu-aside" aria-hidden="true">
+        <div class="aside-card">
+          <span class="aside-kicker">TONIGHT'S HAUL</span>
+          <div class="loot-row"><span class="loot-dot candy"></span> CANDY CORN <b>+</b></div>
+          <div class="loot-row"><span class="loot-dot potion"></span> SHIELD BREW</div>
+          <div class="loot-row"><span class="loot-dot lantern"></span> SOUL MAGNET</div>
+          <div class="loot-row"><span class="loot-dot broom"></span> BROOM RUSH</div>
+          <div class="loot-row"><span class="loot-dot clock"></span> TIME HEX</div>
+        </div>
+        <div class="aside-warning">THE DEAD DO NOT<br /><em>WAIT.</em></div>
+      </aside>
+    </section>
+
+    <section id="pause" class="screen modal-screen hidden" aria-label="Paused">
+      <div class="modal-card pause-card">
+        <span class="modal-kicker">THE NIGHT HOLDS ITS BREATH</span>
+        <h2>PAUSED</h2>
+        <div class="pause-stats">
+          <div><span>SCORE</span><b id="pause-score">0</b></div>
+          <div><span>DISTANCE</span><b id="pause-distance">0 m</b></div>
+          <div><span>CANDY</span><b id="pause-candy">0</b></div>
+        </div>
+        <button id="btn-resume" class="primary-btn"><span class="btn-label">RESUME RUN</span></button>
+        <div class="modal-links">
+          <button id="btn-restart-pause" class="text-btn">RESTART</button>
+          <span>·</span>
+          <button id="btn-menu-pause" class="text-btn">QUIT TO MENU</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="gameover" class="screen modal-screen hidden" aria-label="Game over">
+      <div class="modal-card gameover-card">
+        <span class="modal-kicker">THE HOLLOW CLAIMS ANOTHER</span>
+        <h2 class="over-title">NIGHT'S<br /><em>OVER</em></h2>
+        <div class="run-report">
+          <div class="final-score"><span>FINAL SCORE</span><b id="final-score">0</b></div>
+          <div class="report-grid">
+            <div><span>BEST</span><b id="final-best">0</b></div>
+            <div><span>DISTANCE</span><b id="final-distance">0 m</b></div>
+            <div><span>CANDY</span><b id="final-candy">0</b></div>
+            <div><span>MONSTERS DODGED</span><b id="final-dodged">0</b></div>
+          </div>
+        </div>
+        <div id="new-best" class="new-best hidden">★ NEW BEST ★</div>
+        <div class="gameover-actions">
+          <button id="btn-retry" class="primary-btn"><span class="btn-label">RUN AGAIN</span></button>
+          <button id="btn-menu-over" class="ghost-btn">MENU</button>
+        </div>
+      </div>
+    </section>
+
+    <nav id="touch-controls" class="touch-controls" aria-label="Touch controls">
+      <div class="touch-cluster move-cluster">
+        <button class="touch-btn" data-action="left" aria-label="Move left">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="touch-btn" data-action="right" aria-label="Move right">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="touch-cluster action-cluster">
+        <button class="touch-btn action-btn" data-action="slide" aria-label="Slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m5-5-5 5-5-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          <small>SLIDE</small>
+        </button>
+        <button class="touch-btn action-btn jump-btn" data-action="jump" aria-label="Jump">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-5 5 5-5 5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          <small>JUMP</small>
+        </button>
+      </div>
+    </nav>
+
+    <div id="rotate-hint" class="rotate-hint hidden">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 8V5h3M20 8V5h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>TURN YOUR DEVICE FOR THE FULL NIGHT</span>
+    </div>
+
+    <div id="loader" class="loader">
+      <div class="loader-mark">
+        <span class="loader-eye"></span><span class="loader-eye right"></span>
+        <span class="loader-mouth"></span>
+      </div>
+      <span class="loader-text">SUMMONING THE HOLLOW...</span>
+    </div>
+  </main>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
